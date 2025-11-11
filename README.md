@@ -28,7 +28,7 @@ This coursework assignment requires you to implement, train, and evaluate a mach
 You will have to define a model architecture and a training procedure for this assignment, then train and evaluate it on the Fashion-MNIST dataset.
 1. Implement your model in `submission/fashion_model.py`. 
 2. Implement the training and evaluation functions in `submission/train_fashion_model.py`.
-3. (Optional) 
+3. Perform cross-evaluation for hyperparameter selection and final model evaluation.
 
 You can train your model by running the following command from the project root directory:
 ```bash
