@@ -6,10 +6,10 @@ import numpy as np
 import torch, torchvision
 from torch import nn
 
-from submission.fashion_training import train_fashion_model
+from submission.fashion_training import train_fashion_model, get_transforms
 
 
-def model_check(model, device):
+def model_check(model, device, transforms=None):
     """
     Small script that checks if the model as defined can perform a single
     training step on dummy data. This script will be used during marking.
@@ -27,8 +27,18 @@ def model_check(model, device):
         model.train()
         
         # Create dummy dataset (3 samples)
-        dummy_data = torch.randn(3, 1, 28, 28).to(device)
+        dummy_data = torch.randn(3, 1, 28, 28)
         dummy_labels = torch.tensor([0, 1, 2]).to(device)
+
+        if transforms is not None:
+            # Apply transforms to each sample
+            transformed_data = []
+            for i in range(dummy_data.shape[0]):
+                # Convert to PIL for transforms that expect it
+                img = torchvision.transforms.ToPILImage()(dummy_data[i].cpu())
+                img = transforms(img)
+                transformed_data.append(img)
+            dummy_data = torch.stack(transformed_data).to(device)
         
         # Forward pass
         outputs = model(dummy_data)
@@ -63,7 +73,7 @@ def model_check(model, device):
         return False, f"Model check failed: {str(e)}"
     
 
-def training_check(model_class, device):
+def training_check(model_class, device, transforms=None):
     """
     Verify train_fashion_model() runs and returns valid state_dict.
     Uses small dummy dataset (30 samples) and 1 epoch.
@@ -88,7 +98,7 @@ def training_check(model_class, device):
             def __init__(self, images, labels):
                 self.data = images
                 self.targets = labels
-                self.transform = torchvision.transforms.ToTensor()
+                self.transform = transforms
             def __len__(self):
                 return len(self.data)
             
@@ -128,3 +138,114 @@ def training_check(model_class, device):
         
     except Exception as e:
         return False, f"Training integrity check failed: {str(e)}"
+    
+
+def test_transform_determinism(transforms):
+    """
+    Verify that transforms returned by get_transforms('eval') are deterministic.
+    
+    Returns:
+        bool: True if transforms are deterministic, False otherwise
+        str: Error message if check fails, None otherwise
+    """
+    try:     
+        # Create a dummy input image (PIL Image)
+        dummy_image = torch.randn(1, 28, 28)
+
+        output1 = transforms(torchvision.transforms.ToPILImage()(dummy_image.clone()))
+        output2 = transforms(torchvision.transforms.ToPILImage()(dummy_image.clone()))
+
+        if not torch.allclose(output1, output2):
+            return False, "Non-deterministic transforms in eval mode"
+        
+        return True, None
+    
+    except Exception as e:
+        return False, f"Transform determinism check failed: {str(e)}"
+    
+
+def validate_transform_object(transform_obj, visited=None):
+    """
+    Recursively validate a transform object to ensure it only uses allowed torchvision transforms.
+
+    Returns:
+        bool: True if transforms are valid, False otherwise
+        str: Error message if check fails, None otherwise
+    """
+    ALLOWED_TRANSFORMS = {
+        # Basic preprocessing 
+        'Normalize', 'Resize', 'CenterCrop', 'Pad', 
+        'Grayscale', 'ToTensor', 'ToPILImage',
+        
+        # Augmentation (should use p=0 for eval mode)
+        'RandomHorizontalFlip', 'RandomVerticalFlip', 
+        'RandomRotation', 'RandomCrop', 'ColorJitter',
+        'RandomGrayscale', 'RandomPerspective', 'GaussianBlur',
+        
+        # Compositions, should not be used with arbitrary functions or in eval
+        'Compose', 'RandomApply', 'RandomChoice', 'RandomOrder',
+    }
+
+    BLACKLIST = {
+        'Lambda', 'LinearTransformation'
+    }
+
+    if visited is None:
+        visited = set()
+    
+    obj_id = id(transform_obj)
+    if obj_id in visited:
+        return
+    visited.add(obj_id)
+    
+    # Check it's from torchvision.transforms
+    module = type(transform_obj).__module__
+    if not module.startswith('torchvision.transforms'):
+        raise ValueError(
+            f"Transform {type(transform_obj).__name__} is not from "
+            f"torchvision.transforms (found in {module}). "
+            f"Please avoid using arbitrary functions or lambdas. "
+        )
+    
+    # Check it's on whitelist
+    class_name = type(transform_obj).__name__
+    if class_name in BLACKLIST:
+        raise ValueError(
+                         f"Transform '{class_name}' is not allowed. "
+                         f"Please avoid using arbitrary functions or lambdas. "
+                         f"Allowed: {sorted(ALLOWED_TRANSFORMS)}"
+                         )
+    if class_name not in ALLOWED_TRANSFORMS:
+        raise ValueError(
+            f"Transform '{class_name}' is not on the allowed list. "
+            f"Please contact a course leader if you have a legitimate use case. "
+        )
+    
+    # Recursively check containers
+    if isinstance(transform_obj, torchvision.transforms.Compose):
+        for t in transform_obj.transforms:
+            validate_transform_object(t, visited)
+    
+    if hasattr(transform_obj, 'transforms'):
+        for t in transform_obj.transforms:
+            validate_transform_object(t, visited)
+
+
+def check_valid_transforms(transforms):
+    """
+    Verify that transforms are composed of valid torchvision transforms only.
+    Arbitrary functions or lambdas are not allowed.
+
+    Returns:
+        bool: True if transforms are valid, False otherwise
+        str: Error message if check fails, None otherwise
+    """
+    try:
+        validate_transform_object(transforms)
+    except ImportError:
+        transforms = None
+    except ValueError as e:
+        return False, f"Disallowed transform: {str(e)}"
+    except Exception as e:
+        return False, f"Validate transforms check failed: {str(e)}"
+    return True, None

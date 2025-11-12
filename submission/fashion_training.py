@@ -64,6 +64,30 @@ def train_fashion_model(fashion_mnist,
     return model.state_dict()
 
 
+def get_transforms(mode='train'):
+    """
+    Define any data augmentations or preprocessing here if needed.
+    Only standard torchvision transforms are permitted (no lambda functions), please check that 
+    these pass by running model_calls.py before submission. Transforms will be set to .eval()
+    (deterministic) mode during evaluation, so avoid using stochastic transforms like RandomCrop
+    or RandomHorizontalFlip unless they can be set to p=0 during eval.
+    """
+    if mode == 'train':
+        tfs = torchvision.transforms.Compose([
+            torchvision.transforms.ToTensor(), # convert images to tensors
+        ])
+    elif mode == 'eval': # no stochastic transforms, or use p=0
+        tfs = torchvision.transforms.Compose([
+            torchvision.transforms.ToTensor(), # convert images to tensors
+        ])
+        for tf in tfs.transforms:
+            if hasattr(tf, 'train'):
+                tf.eval()  # set to eval mode if applicable # type: ignore
+    else:
+        raise ValueError(f"Unknown mode {mode} for transforms, must be 'train' or 'eval'.")
+    return tfs
+
+
 def load_training_data():
     # Load FashionMNIST dataset
     # Do not change the dataset or its parameters
@@ -74,10 +98,10 @@ def load_training_data():
         download=True,
     )
     # We load in data as the raw PIL images - recommended to have a look in visualise_dataset.py! 
-    # To use them for training or inference, we need to transform them to tensors:
-    fashion_mnist.transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor()
-    ])
+    # To use them for training or inference, we need to transform them to tensors. 
+    # We set this transform here, as well as any other data preprocessing or augmentation you 
+    # wish to apply.
+    fashion_mnist.transform = get_transforms(mode='train')
     return fashion_mnist
 
 
