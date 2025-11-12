@@ -103,6 +103,7 @@ During marking, the following happens:
 4. **Model loading**: Your architecture is instantiated and weights that you submitted are loaded
 5. **Integrity checks**:
    - Model architecture works (forward/backward pass)
+   - Prepocessing transforms are valid (no lambda functions, sorry) and deterministic in eval mode
    - Training function works and returns valid format
 6. **Evaluation**: Model is evaluated on the test set
 7. **Results**: Accuracy, parameter count, and results from checks are recorded
