@@ -34,7 +34,7 @@ def eval(model, data_loader, criterion, device):
 
     targets = []
     predictions = []
-    loss = 0.0
+    total_loss = 0.0
 
     with torch.no_grad():
         for inputs, labels in data_loader:
@@ -46,9 +46,9 @@ def eval(model, data_loader, criterion, device):
 
             targets.extend(labels.cpu().numpy())
             predictions.extend(predicted.cpu().numpy())
-            loss += loss.item()
+            total_loss += loss.item()
 
     accuracy = (np.array(predictions) == np.array(targets)).mean()
-    avg_loss = loss / len(data_loader)
+    avg_loss = total_loss / len(data_loader)
     return avg_loss, accuracy
 
