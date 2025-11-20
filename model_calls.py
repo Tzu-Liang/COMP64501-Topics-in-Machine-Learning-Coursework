@@ -50,7 +50,10 @@ def main():
     if not os.path.exists('submission/model_weights.pth'):
         print("I couldn't find the model weights at submission/model_weights.pth! Did you forget to train your model first?")
         return
-    
+    if os.path.getsize('submission/model_weights.pth') == 0:
+        print("The model weights file at submission/model_weights.pth is empty! Check that your model was trained and saved correctly.")
+        return
+        
     # Device configuration
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     

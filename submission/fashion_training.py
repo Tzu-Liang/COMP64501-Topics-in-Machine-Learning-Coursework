@@ -197,7 +197,7 @@ def cross_validatioon_model(folds,
 
     average_val_accuracy = sum(average_val_accuracy) / len(average_val_accuracy)
     average_val_loss = sum(average_val_loss) / len(average_val_loss)
-    print(f"Average Val Loss: {average_val_loss:.4f}, Average Val Accuracy: {average_val_accuracy:.4f}\nca")
+    print(f"Average Val Loss: {average_val_loss:.4f}, Average Val Accuracy: {average_val_accuracy:.4f}\n")
     
     return average_val_loss, average_val_accuracy
 
@@ -230,7 +230,7 @@ def main():
     for parameters in combinations:
         print(f"Training with parameters: {parameters}")
         val_loss, val_accuracy = cross_validatioon_model(folds,
-                                                        n_epochs=5,
+                                                        n_epochs=10,
                                                         batch_size=parameters['batch_size'],
                                                         learning_rate=parameters['learning_rate'],
                                                         USE_GPU=True,)
