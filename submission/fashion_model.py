@@ -9,7 +9,7 @@ class Net(nn.Module):
     This simple example is a feedforward neural network with one hidden layer.
     Please note that this example model does not achieve the required parameter count (101700).
     """
-    def __init__(self, conv1=15, conv2=30, num_classes=10):
+    def __init__(self, conv1=16, conv2=32, num_classes=10):
         super(Net, self).__init__()
 
         # We define the layers of our model here by instantiating layer objects.
@@ -45,8 +45,6 @@ class Net(nn.Module):
         # Initialize weights (optional, but good practice)
         nn.init.kaiming_normal_(self.conv1.weight, nonlinearity='relu')
         nn.init.kaiming_normal_(self.conv2.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.fc1.weight, nonlinearity='relu')
-
         # nn.init module contains initialization methods:
         # https://docs.pytorch.org/docs/main/nn.init.html
         # This particular one is called Kaiming initialization (also known as

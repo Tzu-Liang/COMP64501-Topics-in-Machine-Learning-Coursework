@@ -207,48 +207,15 @@ def main():
     # or modify this as needed to add cross-validation, hyperparameter tuning, etc.
     fashion_mnist = load_training_data()
 
-    # TODO: create data splits
-    folds = k_cross_validation_split(fashion_mnist, k=5)
-
-    # TODO: implement hyperparameter search
-    hyperparameter_grid = {
-        'learning_rate': [0.005, 0.001, 0.0005, 0.0001],
-        'batch_size': [32, 64, 128],
+    hyperparameter = {
+        'learning_rate': 0.001,
+        'batch_size': 64
     }
-
-    # Generate all combinations
-    keys = hyperparameter_grid.keys()
-    values = hyperparameter_grid.values()
-    combinations = [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-    model_weights = None
-
-    # Train model 
-    # TODO: this may be done within a loop for hyperparameter search / cross-validation
-    best_parameters = None
-    average_val_loss = []
-    average_val_accuracy = []
-
-    # Grid search
-    for parameters in combinations:
-        print(f"Training with parameters: {parameters}")
-        val_loss, val_accuracy = cross_validatioon_model(folds,
-                                                        n_epochs=10,
-                                                        batch_size=parameters['batch_size'],
-                                                        learning_rate=parameters['learning_rate'],
-                                                        USE_GPU=True,)
-        average_val_loss.append(val_loss)
-        average_val_accuracy.append(val_accuracy)
-    average_val_accuracy = np.array(average_val_accuracy)
-    index_best = np.argmax(average_val_accuracy)
-    best_parameters = combinations[index_best]
-    print(f"Best hyperparameters: {best_parameters} with loss {average_val_loss[index_best]:.4f} and accuracy {average_val_accuracy[index_best]:.4f}")
 
     # Last training with the best parameters
     model_weights = train_fashion_model(fashion_mnist=fashion_mnist,
                                         n_epochs=50,
-                                        batch_size=best_parameters['batch_size'],
-                                        learning_rate=best_parameters['learning_rate'],
+                                        **hyperparameter,
                                         USE_GPU=True,)
 
     # Save model weights
